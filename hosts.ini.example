@@ -1,7 +1,6 @@
 # ================================================================
 # hosts.ini.example
 # 복사 후 실제 IP로 채우세요: cp hosts.ini.example hosts.ini
-# hosts.ini는 .gitignore에 의해 git 추적에서 제외됩니다.
 # ================================================================
 
 # DPL - Deploy Server (VENV: hosts.ini 무관하게 항상 생성)
