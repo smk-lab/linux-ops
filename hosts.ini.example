@@ -8,31 +8,35 @@
 
 # CTL - Controller
 [CTL]
-192.168.0.11
+CTL1 IP
+CTL2 IP
+CTL3 IP
 
 # COM - Compute
 [COM]
-192.168.0.21
-192.168.0.22
+COM IP
+COM IP
 
 # AP - Application Server
 [AP]
-192.168.0.31
-192.168.0.32
+AP1 IP
+AP2 IP
+AP3 IP
 
 # DB - Database Server
 [DB]
-192.168.0.41
-192.168.0.42
+DB1 IP
+DB2 IP
+DB3 IP
 
 # PMT - Prometheus / Monitoring Server
 [PMT]
-192.168.0.51
+PMT IP
 
 # IBR - Internal Broker
 [IBR]
-192.168.0.61
+IBR IP
 
 # EBR - External Broker
 [EBR]
-192.168.0.71
+EBR IP
