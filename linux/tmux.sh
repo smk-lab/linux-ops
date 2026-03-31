@@ -36,7 +36,6 @@ setup_group() {
     IFS=':' read -r win type <<< "$1"
 
     if [[ "$type" == "SSH" && -z "${GROUP_HOSTS[$win]}" ]]; then
-        echo "[$win] hosts.ini에 섹션 없음, 건너뜀"
         return
     fi
 
