@@ -1,0 +1,39 @@
+# ================================================================
+# hosts.ini.example
+# 복사 후 실제 IP로 채우세요: cp hosts.ini.example hosts.ini
+# hosts.ini는 .gitignore에 의해 git 추적에서 제외됩니다.
+# ================================================================
+
+# DPL - Deploy Server (VENV: hosts.ini 무관하게 항상 생성)
+[DPL]
+
+# CTL - Controller
+[CTL]
+192.168.0.11
+
+# COM - Compute
+[COM]
+192.168.0.21
+192.168.0.22
+
+# AP - Application Server
+[AP]
+192.168.0.31
+192.168.0.32
+
+# DB - Database Server
+[DB]
+192.168.0.41
+192.168.0.42
+
+# PMT - Prometheus / Monitoring Server
+[PMT]
+192.168.0.51
+
+# IBR - Internal Broker
+[IBR]
+192.168.0.61
+
+# EBR - External Broker
+[EBR]
+192.168.0.71
