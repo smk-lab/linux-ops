@@ -24,6 +24,9 @@ ops-scripts/
 ### 1. 저장소 클론 후 hosts.ini 생성
 
 ```bash
+git clone https://github.com/<username>/ops-automation-scripts.git
+cd ops-automation-scripts
+
 cp hosts.ini.example hosts.ini
 # hosts.ini에 실제 서버 정보를 채웁니다
 ```
@@ -39,6 +42,8 @@ find . -name "*.sh" -exec chmod +x {} \;
 ---
 
 ## 🛡️ 민감 정보 관리 규칙
+
+이 저장소는 Public입니다. 아래 항목이 절대 커밋되지 않도록 주의하세요.
 
 - `hosts.ini` — 실제 서버 IP/호스트명 포함. **절대 커밋 금지**
 - SSH 키 — 저장소에 절대 포함 금지
