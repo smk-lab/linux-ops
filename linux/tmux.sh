@@ -1,8 +1,8 @@
 #!/bin/bash
 # ----------------------------------------
-# tmux_session.sh
+# tmux.sh
 # 설명: hosts.ini 기반 tmux 세션 자동 생성
-# 사용법: ./tmux_session.sh
+# 사용법: ./tmux.sh
 # ----------------------------------------
 
 SESSION="smk"
