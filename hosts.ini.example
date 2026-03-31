@@ -6,37 +6,31 @@
 # DPL - Deploy Server (VENV: hosts.ini 무관하게 항상 생성)
 [DPL]
 
+
 # CTL - Controller
 [CTL]
-CTL1 IP
-CTL2 IP
-CTL3 IP
+
 
 # COM - Compute
 [COM]
-COM IP
-COM IP
+
 
 # AP - Application Server
 [AP]
-AP1 IP
-AP2 IP
-AP3 IP
+
 
 # DB - Database Server
 [DB]
-DB1 IP
-DB2 IP
-DB3 IP
+
 
 # PMT - Prometheus / Monitoring Server
 [PMT]
-PMT IP
+
 
 # IBR - Internal Broker
 [IBR]
-IBR IP
+
 
 # EBR - External Broker
 [EBR]
-EBR IP
+
