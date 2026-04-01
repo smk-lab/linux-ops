@@ -3,10 +3,6 @@
 # 복사 후 실제 IP로 채우세요: cp hosts.ini.example hosts.ini
 # ================================================================
 
-# DPL - Deploy Server (VENV: hosts.ini 무관하게 항상 생성)
-[DPL]
-
-
 # CTL - Controller
 [CTL]
 
