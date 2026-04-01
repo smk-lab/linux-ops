@@ -21,6 +21,7 @@
 # STO - Storage Server
 [STO]
 
+
 # PMT - Prometheus / Monitoring Server
 [PMT]
 
