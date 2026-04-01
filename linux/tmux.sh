@@ -10,23 +10,19 @@ SESSION="${input}"
 
 HOST_FILE="/home/hosts.ini"
 
-WIN_GROUPS=(
-    "DPL:VENV"
-    "CTL:SSH"
-    "COM:SSH"
-    "AP:SSH"
-    "DB:SSH"
-)
-
 declare -A GROUP_HOSTS
+
+SECTION_ORDER=()
 
 parse_hosts() {
     local current_section=""
     while IFS= read -r line || [[ -n "$line" ]]; do
         line="${line#"${line%%[![:space:]]*}"}"
         [[ -z "$line" || "$line" == "#"* ]] && continue
+
         if [[ "$line" =~ ^\[(.+)\]$ ]]; then
             current_section="${BASH_REMATCH[1]}"
+            SECTION_ORDER+=("$current_section")
         elif [[ -n "$current_section" ]]; then
             GROUP_HOSTS[$current_section]+="$line "
         fi
@@ -34,7 +30,10 @@ parse_hosts() {
 }
 
 setup_group() {
-    IFS=':' read -r win type <<< "$1"
+    local win="$1"
+    local type="SSH"
+
+    [[ "$win" == "DPL" ]] && type="VENV"
 
     if [[ "$type" == "SSH" && -z "${GROUP_HOSTS[$win]}" ]]; then
         return
@@ -44,31 +43,47 @@ setup_group() {
     local count=${#hosts[@]}
     [[ "$type" == "VENV" || $count -eq 0 ]] && count=1
 
+    for ((i=0; i<count; i+=4)); do
+        local win_name="$win"
+        if (( i > 0 )); then
+            win_name="${win}-$((i/4 + 1))"
+        fi
+
     if ! tmux has-session -t "$SESSION" 2>/dev/null; then
-        tmux new-session -d -s "$SESSION" -n "$win"
+        tmux new-session -d -s "$SESSION" -n "$win_name"
     else
-        tmux new-window -t "$SESSION" -n "$win"
+        tmux new-window -t "$SESSION" -n "$win_name"
     fi
 
-    for ((i=1; i<count; i++)); do
-        tmux split-window -v -t "$SESSION:$win"
-    done
-    tmux select-layout -t "$SESSION:$win" even-vertical
+    local remaining=$(( count - i ))
+    local current_win_count=$(( remaining > 4 ? 4 : remaining ))
 
-    for ((i=0; i<count; i++)); do
+    for ((j=1; j<current_win_count; j++)); do
+        tmux split-window -v -t "$SESSION:$win_name"
+    done
+    
+    if (( current_win_count != 4 )); then
+        tmux select-layout -t "$SESSION:$win_name" even-vertical
+    else
+        tmux select-layout -t "$SESSION:$win_name" tiled    
+    fi
+
+    for ((j=0; j<current_win_count; j++)); do
+        local host_idx=$(( i + j ))
         if [[ "$type" == "SSH" ]]; then
-            tmux send-keys -t "$SESSION:$win.$i" "ssh root@${hosts[$i]}" C-m
+            tmux send-keys -t "$SESSION:$win_name.$j" "ssh root@${hosts[$host_idx]}" C-m
         else
-            tmux send-keys -t "$SESSION:$win.$i" "source ~/venv/bin/activate" C-m
-            tmux send-keys -t "$SESSION:$win.$i" "source /etc/kolla/admin-openrc.sh" C-m
-            tmux send-keys -t "$SESSION:$win.$i" "clear" C-m
+            tmux send-keys -t "$SESSION:$win_name.$j" "source ~/venv/bin/activate" C-m
+            tmux send-keys -t "$SESSION:$win_name.$j" "source /etc/kolla/admin-openrc.sh" C-m
+            tmux send-keys -t "$SESSION:$win_name.$j" "clear" C-m
         fi
     done
+done
 }
 
 parse_hosts
 
-for group in "${WIN_GROUPS[@]}"; do
+for group in "${SECTION_ORDER[@]}"; do
     setup_group "$group"
 done
 
