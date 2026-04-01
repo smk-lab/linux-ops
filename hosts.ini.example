@@ -3,6 +3,10 @@
 # 복사 후 실제 IP로 채우세요: cp hosts.ini.example hosts.ini
 # ================================================================
 
+# DPL - DPLOY
+[DPL]
+
+
 # CTL - Controller
 [CTL]
 
