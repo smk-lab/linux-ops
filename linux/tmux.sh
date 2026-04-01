@@ -5,7 +5,8 @@
 # 사용법: ./tmux.sh
 # ----------------------------------------
 
-SESSION="smk"
+read -rp "세션 이름: " input
+SESSION="${input}"
 
 HOST_FILE="/home/hosts.ini"
 
