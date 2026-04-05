@@ -19,7 +19,9 @@ set -g mode-keys vi
 # Prefix 표시 (Ctrl+b 누르면 status bar에 PREFIX 표시)
 set -g status-left "[#S]#{?client_prefix, #[fg=black,bg=red,bold]PREFIX#[default],} "
 set -g status-left-length 40
-set -g status-right " %m/%d %H:%M"
+#set -g status-right " %m/%d %H:%M"
+set -g status-right " cpu:#(top -bn1 | awk '/Cpu/{print 100-$8}')% ram:#(free | awk '/Mem:/{printf \"%.0f%%\",$3/$2*100}') %m/%d %H:%M"
+
 
 # 현재 pane 강조
 set -g allow-rename off
