@@ -37,6 +37,7 @@ apply_tmux_settings() {
         tmux set -t "$SESSION:$win" pane-border-lines double
         tmux set -t "$SESSION:$win" pane-active-border-style "fg=red bold"
         tmux set -t "$SESSION:$win" pane-border-style "fg=grey"
+        tmux set -t "$SESSION:$win" pane-base-index 1
     done
 }
 
