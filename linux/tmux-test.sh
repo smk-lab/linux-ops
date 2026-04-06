@@ -13,6 +13,8 @@ if [ ! -s ~/.tmux.conf]; then
     cat >> ~/.tmux.conf << 'EOF'
 
 # === tmux.sh ===
+set -g default-termianl "screen-256color"
+set -ga terminal-overrides ",xterm-256color:Tc"
 set -g mouse on
 set -g mode-keys vi
 
@@ -22,7 +24,7 @@ set -g pane-border-status top
 set -g pane-border-format " #{pane_index} #{pane_current_command} "
 
 # Prefix 표시 (Ctrl+b 누르면 status bar에 PREFIX 표시)
-set -g status-left "[#S]#{?client_prefix, #[fg=black,bg=red,bold]PREFIX#[default],} "
+set -g status-left "[#S]#{?client_prefix, #[fg=black bg=red bold]PREFIX#[default],} "
 set -g status-left-length 40
 #set -g status-right " %m/%d %H:%M"
 set -g status-right " cpu:#(top -bn1 | awk '/Cpu/{print 100-$8}')% ram:#(free | awk '/Mem:/{printf \"%.0f%%\",$3/$2*100}') %m/%d %H:%M"
