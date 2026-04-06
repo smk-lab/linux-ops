@@ -9,7 +9,7 @@ read -rp "세션 이름: " input
 SESSION="${input}"
 
 # ~/.tmux.conf에 tmux.sh 설정 없으면 추가
-if ! grep -q "# === tmux.sh ===" ~/.tmux.conf 2>/dev/null; then
+if [ ! -s ~/.tmux.conf]; then
     cat >> ~/.tmux.conf << 'EOF'
 
 # === tmux.sh ===
