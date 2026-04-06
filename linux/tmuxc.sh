@@ -10,6 +10,11 @@ SESSION="${input}"
 
 HOST_FILE="/home/hosts.ini"
 
+if [[ ! -f "$HOST_FILE" ]]; then
+    echo "ERROR: There is no $HOST_FILE" >&2
+    exit 1
+fi
+
 declare -A GROUP_HOSTS
 
 SECTION_ORDER=()
