@@ -5,7 +5,7 @@
 # /etc/hosts에서 IPv6와 루프백 외에는 전부 가져오기 때문에 필요 없는 부분 제거 필요
 #--------------------------------------------------------------------------
 
-OUTPUT="hosts.ini"
+OUTPUT="$(dirname "$0")/hosts.ini"
 
 declare -A PATTERN_MAP=(
     [DPL]="dpl,deploy"
