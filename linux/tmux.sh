@@ -7,26 +7,6 @@
 
 source "$(dirname "$0")/lib/parse_hosts.sh"
 
-read -rp "세션 이름: " input
-SESSION="${input}"
-
-HOST_FILE="$(dirname "$0")/../hosts.ini"
-
-if tmux has-session -t "$SESSION" 2>/dev/null; then
-    apply_tmux_settings
-    tmux attach-session -t "$SESSION"
-    exit 0
-fi
-
-if [[ ! -f "$HOST_FILE" ]]; then
-    echo "ERROR: There is no $HOST_FILE" >&2
-    exit 1
-fi
-
-declare -A GROUP_HOSTS
-
-SECTION_ORDER=()
-
 setup_group() {
     local win="$1"
     local type="SSH"
@@ -78,6 +58,24 @@ setup_group() {
     done
 done
 }
+
+declare -A GROUP_HOSTS
+SECTION_ORDER=()
+read -rp "세션 이름: " input
+SESSION="${input}"
+
+HOST_FILE="$(dirname "$0")/../hosts.ini"
+
+if tmux has-session -t "$SESSION" 2>/dev/null; then
+    apply_tmux_settings
+    tmux attach-session -t "$SESSION"
+    exit 0
+fi
+
+if [[ ! -f "$HOST_FILE" ]]; then
+    echo "ERROR: There is no $HOST_FILE" >&2
+    exit 1
+fi
 
 parse_hosts
 
