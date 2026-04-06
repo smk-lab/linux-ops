@@ -78,3 +78,6 @@ done < /etc/hosts
         echo
     done
 } > "$OUTPUT"
+
+chmod +x "$(dirname "$0")"/*.sh
+chmod +x "$(dirname "$0")"/lib/*.sh
