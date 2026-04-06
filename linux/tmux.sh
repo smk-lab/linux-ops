@@ -10,7 +10,7 @@ source "$(dirname "$0")/lib/parse_hosts.sh"
 read -rp "세션 이름: " input
 SESSION="${input}"
 
-HOST_FILE="$(dirname "$0")/hosts.ini"
+HOST_FILE="$(dirname "$0")/../hosts.ini"
 
 if tmux has-session -t "$SESSION" 2>/dev/null; then
     apply_tmux_settings
