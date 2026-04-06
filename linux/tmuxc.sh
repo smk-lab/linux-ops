@@ -26,8 +26,6 @@ apply_tmux_settings() {
     tmux set -t "$SESSION" mode-keys vi
     tmux set -t "$SESSION" pane-border-status top
     tmux set -t "$SESSION" pane-border-format " #P #T "
-    tmux set -t "$SESSION" pane-active-border-style "fg=red bold"
-    tmux set -t "$SESSION" pane-border-style "fg=grey"
     tmux set -t "$SESSION" status-left "[#S]#{?client_prefix, #[fg=black bg=red bold]PREFIX#[default],}"
     tmux set -t "$SESSION" status-left-length 40
     tmux set -t "$SESSION" allow-rename off
