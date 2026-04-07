@@ -1,6 +1,9 @@
 #!/bin/bash
 
 parse_hosts() {
+    declare -g -A GROUP_HOSTS
+    declare -g -a SECTION_ORDER
+
     local current_section=""
     while IFS= read -r line || [[ -n "$line" ]]; do
         line="${line#"${line%%[![:space:]]*}"}"
