@@ -59,7 +59,6 @@ setup_group() {
 done
 }
 
-declare -A GROUP_HOSTS
 SECTION_ORDER=()
 read -rp "세션 이름: " input
 SESSION="${input}"
