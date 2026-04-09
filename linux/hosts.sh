@@ -47,4 +47,4 @@ main() {
 # 호출
 main "$@"
 
-find "$(dirname "$0")" -name "*.sh" -exec chmod +x {} \;
+find "$(dirname "$0")/.." -name "*.sh" -exec chmod +x {} \;
