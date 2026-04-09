@@ -47,5 +47,4 @@ main() {
 # 호출
 main "$@"
 
-chmod +x "${LINUX_DIR}"/*.sh
-chmod +x "${PROJECT_ROOT}"/lib/*.sh
+find "$(dirname "$0")" -name "*.sh" -exec chmod +x {} \;
