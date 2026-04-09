@@ -1,86 +1,53 @@
 #!/bin/bash
 # ----------------------------------------
-# tmux.sh
-# 설명: hosts.ini 기반 tmux 세션 자동 생성
-# 사용법: ./tmux.sh
+# tmuxc.sh
+# 설명: custom이 된 tmux입니다.
+# 사용법: ./tmuxc.sh
+#
+# 단축키
+# prefix + [: 스크롤 모드 (vi키, q 종료)
+# 마우스 copy&paste 사용 시 shift키 사용
 # ----------------------------------------
 
-source "$(dirname "$0")/lib/parse_hosts.sh"
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LIB_DIR="$(cd "$(dirname "$0")/../lib" && pwd)"
+LINUX_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-setup_group() {
-    local win="$1"
-    local type="SSH"
+source "${LIB_DIR}/tmux/input_name.sh"
+source "${LIB_DIR}/tmux/check_session.sh"
+source "${LIB_DIR}/check_hosts_file.sh"
+source "${LIB_DIR}/parse_hosts.sh"
+source "${LIB_DIR}/tmux/create_tmux.sh"
+source "${LIB_DIR}/tmux/split_pane.sh"
+source "${LIB_DIR}/tmux/custom.sh"
+source "${LIB_DIR}/tmux/build_session.sh"
 
-    [[ "$win" == "DPL" ]] && type="VENV"
+# ---------------------------------------------------
+# HOST_FILE - hosts.ini 파일 위치
+# VENV_GROUPS - openstack CLI용 venv 활성화 그룹
+# KNOWN_GROUPS - 생성할 tmux window 그룹 목록
+# INCLUDE_UNKNOWN - false 시 KNOWN_GROUPS 외 그룹 생성 제외
+# custom - tmux 테마/옵션 설정 함수
+#          window 단위 설정은 for문 안에 추가
+# ---------------------------------------------------
+HOST_FILE="${PROJECT_ROOT}/hosts.ini"
+VENV_GROUPS=(DPL)
+KNOWN_GROUPS=(DPL CTL COM AP DB PMT IBR EBR STR)
+INCLUDE_UNKNOWN=false
 
-    if [[ "$type" == "SSH" && -z "${GROUP_HOSTS[$win]}" ]]; then
-        return
-    fi
-
-    read -ra hosts <<< "${GROUP_HOSTS[$win]}"
-    local count=${#hosts[@]}
-    [[ "$type" == "VENV" || $count -eq 0 ]] && count=1
-
-    for ((i=0; i<count; i+=4)); do
-        local win_name="$win"
-        if (( i > 0 )); then
-            win_name="${win}-$((i/4 + 1))"
-        fi
-
-    if ! tmux has-session -t "$SESSION" 2>/dev/null; then
-        tmux new-session -d -s "$SESSION" -n "$win_name"
-    else
-        tmux new-window -t "$SESSION" -n "$win_name"
-    fi
-
-    local remaining=$(( count - i ))
-    local current_win_count=$(( remaining > 4 ? 4 : remaining ))
-
-    for ((j=1; j<current_win_count; j++)); do
-        tmux split-window -v -t "$SESSION:$win_name"
+# main 함수
+main(){
+    input_name
+    check_session
+    check_hosts_file
+    parse_hosts
+        
+    for group in "${SECTION_ORDER[@]}"; do
+        build_session "$group"
     done
-    
-    if (( current_win_count != 4 )); then
-        tmux select-layout -t "$SESSION:$win_name" even-vertical
-    else
-        tmux select-layout -t "$SESSION:$win_name" tiled    
-    fi
-
-    for ((j=0; j<current_win_count; j++)); do
-        local host_idx=$(( i + j ))
-        if [[ "$type" == "SSH" ]]; then
-            tmux send-keys -t "$SESSION:$win_name.$j" "ssh root@${hosts[$host_idx]}" C-m
-        else
-            tmux send-keys -t "$SESSION:$win_name.$j" "source ~/venv/bin/activate" C-m
-            tmux send-keys -t "$SESSION:$win_name.$j" "source /etc/kolla/admin-openrc.sh" C-m
-            tmux send-keys -t "$SESSION:$win_name.$j" "clear" C-m
-        fi
-    done
-done
 }
 
-SECTION_ORDER=()
-read -rp "세션 이름: " input
-SESSION="${input}"
-
-HOST_FILE="$(dirname "$0")/../hosts.ini"
-
-if tmux has-session -t "$SESSION" 2>/dev/null; then
-    apply_tmux_settings
-    tmux attach-session -t "$SESSION"
-    exit 0
-fi
-
-if [[ ! -f "$HOST_FILE" ]]; then
-    echo "ERROR: There is no $HOST_FILE" >&2
-    exit 1
-fi
-
-parse_hosts
-
-for group in "${SECTION_ORDER[@]}"; do
-    setup_group "$group"
-done
-
+# 구현부
+main "$@"
 tmux select-window -t "$SESSION:DPL"
 tmux attach-session -t "$SESSION"

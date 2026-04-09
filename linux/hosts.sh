@@ -1,12 +1,29 @@
 #!/bin/bash
+
 #--------------------------------------------------------------------------
 # hosts.sh - /etc/hosts 기반으로 hosts.ini 자동 생성
 # 그룹 추가/수정 필요 시 아래 PATTERN_MAP과 GROUP_ORDER만 편집
 # /etc/hosts에서 IPv6와 루프백 외에는 전부 가져오기 때문에 필요 없는 부분 제거 필요
 #--------------------------------------------------------------------------
 
-OUTPUT="$(dirname "$0")/../hosts.ini"
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LIB_DIR="$(cd "$(dirname "$0")/../lib" && pwd)"
+LINUX_DIR="$(cd "$(dirname "$0")" && pwd)"
 
+source "${LIB_DIR}/hosts/build_hosts_prefix_map.sh"
+source "${LIB_DIR}/hosts/read_etc_hosts.sh"
+source "${LIB_DIR}/hosts/write_hosts_output.sh"
+
+
+
+#-----------------------------------------------------
+# OUTPUT - hosts.ini 파일 생성 경로
+# GROUP_ORDER - hosts.ini 출력 순서
+# PATTERN_MAP - 호스트명 패턴 → 그룹 매핑
+#-----------------------------------------------------
+
+OUTPUT="$(dirname "$0")/../hosts.ini"
+GROUP_ORDER=(DPL CTL COM AP DB PMT IBR EBR STR)
 declare -A PATTERN_MAP=(
     [DPL]="dpl,deploy"
     [CTL]="ctl,ctrl,controller"
@@ -16,68 +33,19 @@ declare -A PATTERN_MAP=(
     [PMT]="pmt,prometheus,monitor"
     [IBR]="ibr,internal"
     [EBR]="ebr,external"
-    [STR]="str,sto,storage,ceph"
+    [STR]="str,sto,storage,ceph"  
 )
 
-GROUP_ORDER=(DPL CTL COM AP DB PMT IBR EBR STR)
 
-#===========================================================
+# 구현부
+main() {
+    build_hosts_prefix_map
+    read_etc_hosts
+    write_hosts_output > "$OUTPUT"
+}
 
-declare -A GROUP_IPS
-declare -a UNKOWN_GROUPS
+# 호출
+main "$@"
 
-declare -A PREFIX_TO_GROUP
-for group in "${!PATTERN_MAP[@]}"; do
-    IFS=',' read -ra patterns <<< "${PATTERN_MAP[$group]}"
-    for pattern in "${patterns[@]}"; do
-        PREFIX_TO_GROUP[$pattern]=$group
-    done
-done
-
-while read -r ip hostname _; do
-    [[ -z "$ip" || "$ip" == "#"* ]] && continue
-    if [[ "$ip" == "127."* || "$ip" == *"::"* || "$ip" == "ff"* ]]; then
-        [[ "$hostname" != *"dpl"* ]] && continue
-    fi
-
-    prefix=$(echo "$hostname" | sed 's/[0-9]*$//' | tr '[:upper:]' '[:lower:]' | tr -d '[:punct:]')
-    [[ -z "$prefix" ]] && continue
-
-    group="${PREFIX_TO_GROUP[$prefix]}"
-
-    if [[ -n "$group" ]]; then
-        GROUP_IPS[$group]+="$ip"$'\n'
-    else
-        fallback=$(echo "$prefix" | tr '[:lower:]' '[:upper:]')
-        GROUP_IPS[$fallback]+="$ip"$'\n'
-        if [[ ! " ${UNKNOWN_GROUPS[*]} " =~ " $fallback " ]]; then
-            UNKNOWN_GROUPS+=("$fallback")
-        fi
-    fi
-done < /etc/hosts
-
-{
-    for group_raw in "${GROUP_ORDER[@]}"; do
-        group=$(echo "$group_raw" | tr -d '[:space:]')
-        [[ "$group" != "DPL" && -z "${GROUP_IPS[$group]}" ]] && continue
-        
-        echo "[$group]"
-        
-        if [[ -n "${GROUP_IPS[$group]}" ]]; then
-            echo -n "${GROUP_IPS["$group"]}"
-        elif [[ "$group" == "DPL" ]]; then
-            echo "127.0.0.1"
-        fi
-        
-        echo 
-    done
-
-    for group in $(printf '%s\n' "${UNKNOWN_GROUPS[@]}" | sort); do
-        echo "[$group]"
-        echo -n "${GROUP_IPS["$group"]}"
-        echo
-    done
-} > "$OUTPUT"
-
-chmod +x "$(dirname "$0")"/*.sh
-chmod +x "$(dirname "$0")"/lib/*.sh
+chmod +x "${LINUX_DIR}"/*.sh
+chmod +x "${PROJECT_ROOT}"/lib/*.sh
