@@ -1,4 +1,7 @@
 #!/bin/bash
+set -e
+set -u
+set -o pipefail
 
 #------------------------------------------------------------------------------
 # hosts.sh - /etc/hosts 기반으로 hosts.ini 자동 생성
@@ -47,6 +50,11 @@ build_hosts_prefix_map() {
 read_etc_hosts() {
     declare -gA GROUP_IPS
     declare -ga UNKNOWN_GROUPS
+
+    for group in "${GROUP_ORDER[@]}"; do
+        GROUP_IPS[$group]=""
+    done
+
     while read -r ip hostname _; do
         [[ -z "$ip" || "$ip" == "#"* ]] && continue
         if [[ "$ip" == "127."* || "$ip" == *"::"* || "$ip" == "ff"* ]]; then
@@ -56,7 +64,7 @@ read_etc_hosts() {
         prefix=$(echo "$hostname" | sed 's/[0-9]*$//' | tr '[:upper:]' '[:lower:]' | tr -d '[:punct:]')
         [[ -z "$prefix" ]] && continue
 
-        group="${PREFIX_TO_GROUP[$prefix]}"
+        group="${PREFIX_TO_GROUP[$prefix]:-}"
 
         if [[ -n "$group" ]]; then
             GROUP_IPS[$group]+="$ip"$'\n'
@@ -80,7 +88,7 @@ write_hosts_output() {
         if [[ -n "${GROUP_IPS[$group]}" ]]; then
             echo -n "${GROUP_IPS["$group"]}"
         elif [[ "$group" == "DPL" ]]; then
-            echo "127.0.0.1"
+            echo "$(hostname -I | awk '{print $1}')" 
         fi
         
         echo 
@@ -102,8 +110,18 @@ main() {
     write_hosts_output > "$OUTPUT"
 }
 
+# ==============================================================================
+# [COLORS] - 터미널 출력 색상 정의
+# ==============================================================================
+RED='\033[0;31m'    # 에러/실패
+GREEN='\033[0;32m'  # 성공/완료
+NC='\033[0m'        # No Color (색상 초기화)
+
 #===============================================================================
 # [ENTRY POINT]
 #===============================================================================
 main "$@"
 find "$(dirname "$0")" -name "*.sh" -exec chmod +x {} \;
+echo "======================================="
+echo -e "${GREEN}=> Created: ${PROJECT_ROOT}/hosts.ini${NC}"
+echo "======================================="
