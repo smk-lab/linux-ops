@@ -17,14 +17,16 @@ LINUX_DIR="$(cd "$(dirname "$0")" && pwd)"
 # HOST_FILE - hosts.ini 파일 위치
 # SSH_USER - 접속을 위한 SSH 계정
 # SSH_PORT - 접속을 위한 SSH 포트
-# SSH_TIMOUT - 네트워크 상태에 따라 증가
+# SSH_TIMEOUT - 네트워크 상태에 따라 증가
 # SSH_RETRY - 네트워크 상태에 따라 증가
+# PASSWORD_RULE_ENABLE - PASSWOR RULE TRUE 시 동작 (산기원 커스텀)
 #-------------------------------------------------------------------------------
 HOST_FILE="${PROJECT_ROOT}/hosts.ini"
 SSH_USER="root"
 SSH_PORT="22"
 SSH_TIMEOUT="3"
 SSH_RETRY="1"
+PASSWORD_RULE_ENABLE="false"
 
 # ==============================================================================
 # [COLORS] - 터미널 출력 색상 정의
@@ -50,15 +52,41 @@ get_hosts_ip() {
         /^\[/ {next} /^\s*#/ || /^\s*$/ { next } { print $1 }' "${HOST_FILE}"
 }
 
+get_password() {
+    local host=$1
+    local password=$2
+    local prefix=$3
+    local suffix=$4
+
+    if [ "${PASSWORD_RULE_ENABLE}" = true ]; then
+        local last_octet
+        last_octet=$(echo "${host}" | awk -F. '{print $4}')
+        echo "${prefix}${last_octet}${suffix}"
+    else
+        echo "${password}"
+    fi
+}
+
 exchange_keys() {
-    local password
-    read -sp "SSH 비밀번호 입력: " password
-    echo
+    local password=""
+
+    if [ "${PASSWORD_RULE_ENABLE}" = true ]; then
+        local prefix suffix
+        read -sp "PASSWORD PREFIX: " prefix
+        echo
+        read -sp "PASSWORD SUFFIX: " suffix
+        echo
+    else
+        read -sp "SSH PASSWORD: " password
+        echo
+    fi
 
     setup_ssh_key
 
     while IFS= read -r host; do
-        if sshpass -p "${password}" ssh-copy-id \
+        local pw
+        pw=$(get_password "${host}" "${password}" "${prefix:-}" "${suffix:-}")
+        if sshpass -p "${pw}" ssh-copy-id \
             -o StrictHostKeyChecking=accept-new \
             -o ConnectTimeout="${SSH_TIMEOUT}" \
             -o ConnectionAttempts="${SSH_RETRY}" \
