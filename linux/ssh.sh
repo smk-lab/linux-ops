@@ -41,6 +41,14 @@ NC='\033[0m'        # No Color (색상 초기화)
 SUCCESS_CNT=0
 FAILURE_CNT=0
 
+check_tools(){
+    if ! command -V sshpass > /dev/null 2>&1; then
+        echo "There is no sshpass"
+        echo "apt install sshpass -y"
+        exit 1
+    fi
+}
+
 setup_ssh_key() {
     if [ ! -f ~/.ssh/id_rsa ]; then
         ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
@@ -126,6 +134,7 @@ print_summary() {
 # [MAIN]
 #===============================================================================
 main() {
+    check_tools
     echo "=== 대상 호스트 ==="
     get_hosts_ip
     echo "=================="
