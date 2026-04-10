@@ -17,10 +17,14 @@ LINUX_DIR="$(cd "$(dirname "$0")" && pwd)"
 # HOST_FILE - hosts.ini 파일 위치
 # SSH_USER - 접속을 위한 SSH 계정
 # SSH_PORT - 접속을 위한 SSH 포트
+# SSH_TIMOUT - 네트워크 상태에 따라 증가
+# SSH_RETRY - 네트워크 상태에 따라 증가
 #-------------------------------------------------------------------------------
 HOST_FILE="${PROJECT_ROOT}/hosts.ini"
 SSH_USER="root"
 SSH_PORT="22"
+SSH_TIMEOUT="3"
+SSH_RETRY="1"
 
 # ==============================================================================
 # [COLORS] - 터미널 출력 색상 정의
@@ -32,6 +36,9 @@ NC='\033[0m'        # No Color (색상 초기화)
 #===============================================================================
 # [FUNCTIONS]
 #===============================================================================
+SUCCESS_CNT=0
+FAILURE_CNT=0
+
 setup_ssh_key() {
     if [ ! -f ~/.ssh/id_rsa ]; then
         ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
@@ -40,10 +47,7 @@ setup_ssh_key() {
 
 get_hosts_ip() {
     awk '
-        /^\[/      { skip=0; next }
-        skip || /^\s*#/ || /^\s*$/ { next }
-        { print $1 }
-    ' "${HOST_FILE}"
+        /^\[/ {next} /^\s*#/ || /^\s*$/ { next } { print $1 }' "${HOST_FILE}"
 }
 
 exchange_keys() {
@@ -62,10 +66,32 @@ exchange_keys() {
             -p "${SSH_PORT}" \
             "${SSH_USER}@${host}" > /dev/null 2>&1; then
             printf "${GREEN}%-8s${NC} %s\n" "[OK]" "${host}"
+            count_result 0
         else
             printf "${RED}%-8s${NC} %s\n" "[FAIL]" "${host}"
+            count_result 1
         fi
     done < <(get_hosts_ip)
+}
+
+count_result() {
+    if [ $1 -eq 0 ]; then
+        SUCCESS_CNT=$(( SUCCESS_CNT + 1 ))
+    else
+        FAILURE_CNT=$(( FAILURE_CNT + 1 ))
+    fi
+}
+
+print_summary() {
+    local total=$(( SUCCESS_CNT + FAILURE_CNT ))
+    echo "=========================================="
+    echo "  Execution Summary"
+    echo "------------------------------------------"
+    echo "  Total   : $total"
+    echo -e "  ${GREEN}Success : $SUCCESS_CNT"
+    echo -e "  ${RED}Failed  : $FAILURE_CNT${NC}"
+    echo "=========================================="
+    echo ""
 }
 
 #===============================================================================
@@ -84,3 +110,4 @@ main() {
 # [ENTRY POINT]
 #===============================================================================
 main "$@"
+print_summary
