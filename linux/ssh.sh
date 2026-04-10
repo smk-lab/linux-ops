@@ -21,6 +21,14 @@ LINUX_DIR="$(cd "$(dirname "$0")" && pwd)"
 HOST_FILE="${PROJECT_ROOT}/hosts.ini"
 SSH_USER="root"
 SSH_PORT="22"
+
+# ==============================================================================
+# [COLORS] - 터미널 출력 색상 정의
+# ==============================================================================
+RED='\033[0;31m'    # 에러/실패
+GREEN='\033[0;32m'  # 성공/완료
+NC='\033[0m'        # No Color (색상 초기화)
+
 #===============================================================================
 # [FUNCTIONS]
 #===============================================================================
@@ -48,22 +56,17 @@ exchange_keys() {
     while IFS= read -r host; do
         if sshpass -p "${password}" ssh-copy-id \
             -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout="${SSH_TIMEOUT}" \
+            -o ConnectionAttempts="${SSH_RETRY}" \
             -i ~/.ssh/id_rsa.pub \
             -p "${SSH_PORT}" \
             "${SSH_USER}@${host}" > /dev/null 2>&1; then
-            echo "[OK]     ${host}"
+            printf "${GREEN}%-8s${NC} %s\n" "[OK]" "${host}"
         else
-            echo "[FAIL]   ${host}"
+            printf "${RED}%-8s${NC} %s\n" "[FAIL]" "${host}"
         fi
     done < <(get_hosts_ip)
 }
-
-# ==============================================================================
-# [COLORS] - 터미널 출력 색상 정의
-# ==============================================================================
-RED='\033[0;31m'    # 에러/실패
-GREEN='\033[0;32m'  # 성공/완료
-NC='\033[0m'        # No Color (색상 초기화)
 
 #===============================================================================
 # [MAIN]

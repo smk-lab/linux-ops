@@ -33,6 +33,13 @@ declare -A PATTERN_MAP=(
     [STR]="str,sto,storage,ceph"  
 )
 
+# ==============================================================================
+# [COLORS] - 터미널 출력 색상 정의
+# ==============================================================================
+RED='\033[0;31m'    # 에러/실패
+GREEN='\033[0;32m'  # 성공/완료
+NC='\033[0m'        # No Color (색상 초기화)
+
 #===============================================================================
 # [FUNCTIONS]
 #===============================================================================
@@ -61,6 +68,11 @@ read_etc_hosts() {
             [[ "$hostname" != *"dpl"* ]] && continue
         fi
 
+        if [[ "$hostname" == "$(hostname)" ]]; then
+              GROUP_IPS[DPL]+="$ip"$'\n'
+              continue
+        fi
+        
         prefix=$(echo "$hostname" | sed 's/[0-9]*$//' | tr '[:upper:]' '[:lower:]' | tr -d '[:punct:]')
         [[ -z "$prefix" ]] && continue
 
@@ -83,16 +95,12 @@ write_hosts_output() {
         group=$(echo "$group_raw" | tr -d '[:space:]')
         [[ "$group" != "DPL" && -z "${GROUP_IPS[$group]}" ]] && continue
         
-        echo "[$group]"
-        
-        if [[ -n "${GROUP_IPS[$group]}" ]]; then
-            echo -n "${GROUP_IPS["$group"]}"
-        elif [[ "$group" == "DPL" ]]; then
-            echo "$(hostname -I | awk '{print $1}')" 
-        fi
-        
+        echo "[$group]"   
+        echo -n "${GROUP_IPS[$group]}"
         echo 
     done
+
+    [[ ${#UNKNOWN_GROUPS[@]} -eq 0 ]] && return
 
     for group in $(printf '%s\n' "${UNKNOWN_GROUPS[@]}" | sort); do
         echo "[$group]"
@@ -109,13 +117,6 @@ main() {
     read_etc_hosts
     write_hosts_output > "$OUTPUT"
 }
-
-# ==============================================================================
-# [COLORS] - 터미널 출력 색상 정의
-# ==============================================================================
-RED='\033[0;31m'    # 에러/실패
-GREEN='\033[0;32m'  # 성공/완료
-NC='\033[0m'        # No Color (색상 초기화)
 
 #===============================================================================
 # [ENTRY POINT]
