@@ -33,6 +33,14 @@ INCLUDE_UNKNOWN=false
 #===============================================================================
 # [FUNCTIONS]
 #===============================================================================
+check_tools(){
+    if ! command -V tmux > /dev/null 2>&1; then
+        echo "There is no tmux"
+        echo "apt install tmux -y"
+        exit 1
+    fi
+}
+
 input_name() {
     read -rp "세션 이름: " input
     SESSION="${input}"
@@ -145,6 +153,7 @@ build_session() {
 # [MAIN]
 #===============================================================================
 main(){
+    check_tools
     input_name
     check_session
     check_hosts_file
