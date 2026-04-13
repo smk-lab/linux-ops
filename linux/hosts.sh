@@ -1,0 +1,129 @@
+#!/bin/bash
+set -e
+set -u
+set -o pipefail
+
+#------------------------------------------------------------------------------
+# hosts.sh
+# Description : /etc/hosts 기반으로 hosts.ini 자동 생성
+# /etc/hosts에서 IPv6와 루프백 외에는 전부 가져오기 때문에 필요 없는 부분 제거 필요
+#------------------------------------------------------------------------------
+
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LINUX_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+#==============================================================================
+# [CONFIG]
+#==============================================================================
+# OUTPUT - hosts.ini 파일 생성 경로
+# GROUP_ORDER - hosts.ini 출력 순서
+# PATTERN_MAP - 호스트명 패턴 → 그룹 매핑
+#------------------------------------------------------------------------------
+
+OUTPUT="$(dirname "$0")/../hosts.ini"
+GROUP_ORDER=(DPL CTL COM AP DB PMT IBR EBR STR)
+declare -A PATTERN_MAP=(
+    [DPL]="dpl,deploy"
+    [CTL]="ctl,ctrl,controller"
+    [COM]="com,computer"
+    [AP]="AP,ap"
+    [DB]="DB,db,database"
+    [PMT]="pmt,prometheus,monitor"
+    [IBR]="ibr,internal"
+    [EBR]="ebr,external"
+    [STR]="str,sto,storage,ceph"  
+)
+
+# ==============================================================================
+# [COLORS] - 터미널 출력 색상 정의
+# ==============================================================================
+RED='\033[0;31m'    # 에러/실패
+GREEN='\033[0;32m'  # 성공/완료
+NC='\033[0m'        # No Color (색상 초기화)
+
+#===============================================================================
+# [FUNCTIONS]
+#===============================================================================
+
+build_hosts_prefix_map() {
+    declare -gA PREFIX_TO_GROUP
+    for group in "${!PATTERN_MAP[@]}"; do
+        IFS=',' read -ra patterns <<< "${PATTERN_MAP[$group]}"
+        for pattern in "${patterns[@]}"; do
+            PREFIX_TO_GROUP[$pattern]=$group
+        done
+    done
+}
+
+read_etc_hosts() {
+    declare -gA GROUP_IPS
+    declare -ga UNKNOWN_GROUPS
+
+    for group in "${GROUP_ORDER[@]}"; do
+        GROUP_IPS[$group]=""
+    done
+
+    while read -r ip hostname _; do
+        [[ -z "$ip" || "$ip" == "#"* ]] && continue
+        if [[ "$ip" == "127."* || "$ip" == *"::"* || "$ip" == "ff"* ]]; then
+            [[ "$hostname" != *"dpl"* ]] && continue
+        fi
+
+        if [[ "$hostname" == "$(hostname)" ]]; then
+              GROUP_IPS[DPL]+="$ip"$'\n'
+              continue
+        fi
+        
+        prefix=$(echo "$hostname" | sed 's/[0-9]*$//' | tr '[:upper:]' '[:lower:]' | tr -d '[:punct:]')
+        [[ -z "$prefix" ]] && continue
+
+        group="${PREFIX_TO_GROUP[$prefix]:-}"
+
+        if [[ -n "$group" ]]; then
+            GROUP_IPS[$group]+="$ip"$'\n'
+        else
+            fallback=$(echo "$prefix" | tr '[:lower:]' '[:upper:]')
+            GROUP_IPS[$fallback]+="$ip"$'\n'
+            if [[ ! " ${UNKNOWN_GROUPS[*]} " =~ " $fallback " ]]; then
+                UNKNOWN_GROUPS+=("$fallback")
+            fi
+        fi
+    done < /etc/hosts
+}
+
+write_hosts_output() {
+    for group_raw in "${GROUP_ORDER[@]}"; do
+        group=$(echo "$group_raw" | tr -d '[:space:]')
+        [[ "$group" != "DPL" && -z "${GROUP_IPS[$group]}" ]] && continue
+        
+        echo "[$group]"   
+        echo -n "${GROUP_IPS[$group]}"
+        echo 
+    done
+
+    [[ ${#UNKNOWN_GROUPS[@]} -eq 0 ]] && return
+
+    for group in $(printf '%s\n' "${UNKNOWN_GROUPS[@]}" | sort); do
+        echo "[$group]"
+        echo -n "${GROUP_IPS["$group"]}"
+        echo
+    done
+}
+
+#===============================================================================
+# [MAIN]
+#===============================================================================
+main() {
+    build_hosts_prefix_map
+    read_etc_hosts
+    write_hosts_output > "$OUTPUT"
+}
+
+#===============================================================================
+# [ENTRY POINT]
+#===============================================================================
+main "$@"
+find "$(dirname "$0")" -name "*.sh" -exec chmod +x {} \;
+echo "======================================="
+echo -e "${GREEN}=> Created: ${PROJECT_ROOT}/hosts.ini${NC}"
+echo "======================================="

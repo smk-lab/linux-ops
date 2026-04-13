@@ -1,0 +1,40 @@
+# ================================================================
+# hosts.ini.example
+# 복사 후 실제 IP로 채우세요: cp hosts.ini.example hosts.ini
+# ================================================================
+
+# DPL - DPLOY
+[DPL]
+
+
+# CTL - Controller
+[CTL]
+
+
+# COM - Compute
+[COM]
+
+
+# AP - Application Server
+[AP]
+
+
+# DB - Database Server
+[DB]
+
+
+# STO - Storage Server
+[STO]
+
+
+# PMT - Prometheus / Monitoring Server
+[PMT]
+
+
+# IBR - Internal Broker
+[IBR]
+
+
+# EBR - External Broker
+[EBR]
+
