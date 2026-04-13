@@ -14,13 +14,6 @@ LINUX_DIR="$(cd "$(dirname "$0")" && pwd)"
 #===============================================================================
 # [CONFIG]
 #===============================================================================
-# HOST_FILE - hosts.ini 파일 위치
-# SSH_USER - 접속을 위한 SSH 계정
-# SSH_PORT - 접속을 위한 SSH 포트
-# SSH_TIMEOUT - 네트워크 상태에 따라 증가
-# SSH_RETRY - 네트워크 상태에 따라 증가
-# PASSWORD_RULE_ENABLE - PASSWOR RULE TRUE 시 동작 (산기원 커스텀)
-#-------------------------------------------------------------------------------
 HOST_FILE="${PROJECT_ROOT}/hosts.ini"
 SSH_USER="root"
 SSH_PORT="22"
@@ -29,11 +22,11 @@ SSH_RETRY="1"
 PASSWORD_RULE_ENABLE="false"
 
 # ==============================================================================
-# [COLORS] - 터미널 출력 색상 정의
+# [COLORS]
 # ==============================================================================
-RED='\033[0;31m'    # 에러/실패
-GREEN='\033[0;32m'  # 성공/완료
-NC='\033[0m'        # No Color (색상 초기화)
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
 
 #===============================================================================
 # [FUNCTIONS]
@@ -46,6 +39,15 @@ check_tools(){
         echo "There is no sshpass"
         echo "apt install sshpass -y"
         exit 1
+    fi
+}
+
+remove_known_hosts(){
+    local result=$1
+    local host=$2
+
+    if echo "$result" | grep -q "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!"; then
+        ssh-keygen -f "$HOME/.ssh/known_hosts" -R "$host" 2>/dev/null
     fi
 }
 
@@ -85,22 +87,29 @@ exchange_keys() {
         read -sp "PASSWORD SUFFIX: " suffix
         echo
     else
-        read -sp "SSH PASSWORD: " password
+        read -sp "PASSWORD: " password
         echo
     fi
-
-    setup_ssh_key
 
     while IFS= read -r host; do
         local pw
         pw=$(get_password "${host}" "${password}" "${prefix:-}" "${suffix:-}")
-        if sshpass -p "${pw}" ssh-copy-id \
+
+        local result
+        set +e
+        result=$(sshpass -p "${pw}" ssh-copy-id \
             -o StrictHostKeyChecking=accept-new \
             -o ConnectTimeout="${SSH_TIMEOUT}" \
             -o ConnectionAttempts="${SSH_RETRY}" \
             -i ~/.ssh/id_rsa.pub \
             -p "${SSH_PORT}" \
-            "${SSH_USER}@${host}" > /dev/null 2>&1; then
+            "${SSH_USER}@${host}" 2>&1)
+        local exit_code=$?
+        set -e
+
+        remove_known_hosts "$result" "$host"
+
+        if [ $exit_code -eq 0 ]; then
             printf "${GREEN}%-8s${NC} %s\n" "[OK]" "${host}"
             count_result 0
         else
@@ -135,13 +144,13 @@ print_summary() {
 #===============================================================================
 main() {
     check_tools
+    setup_ssh_key
     echo "=== 대상 호스트 ==="
     get_hosts_ip
     echo "=================="
     exchange_keys
     sudo systemctl restart sshd
 }
-
 
 #===============================================================================
 # [ENTRY POINT]
