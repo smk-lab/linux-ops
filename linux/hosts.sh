@@ -105,8 +105,10 @@ write_hosts_output() {
 
     for group in $(printf '%s\n' "${UNKNOWN_GROUPS[@]}" | sort); do
         echo "[$group]"
-        echo -n "${GROUP_IPS["$group"]}"
-        echo
+        while IFS= read -r ip; do
+            [[ -z "$ip" ]] && continue
+            echo "# $ip"
+        done <<< "${GROUP_IPS[$group]}"
     done
 }
 
