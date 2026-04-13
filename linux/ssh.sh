@@ -49,6 +49,15 @@ check_tools(){
     fi
 }
 
+remove_known_hosts(){
+    local result=$1
+    local host=$2
+
+    if echo "$result" | grep -q "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!"; then
+        ssh-keygen -f "$HOME/.ssh/known_hosts" -R "$host" 2>/dev/null
+    fi
+}
+
 setup_ssh_key() {
     if [ ! -f ~/.ssh/id_rsa ]; then
         ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
@@ -85,22 +94,27 @@ exchange_keys() {
         read -sp "PASSWORD SUFFIX: " suffix
         echo
     else
-        read -sp "SSH PASSWORD: " password
+        read -sp "PASSWORD: " password
         echo
     fi
-
-    setup_ssh_key
 
     while IFS= read -r host; do
         local pw
         pw=$(get_password "${host}" "${password}" "${prefix:-}" "${suffix:-}")
-        if sshpass -p "${pw}" ssh-copy-id \
+
+        local result
+        result=$(sshpass -p "${pw}" ssh-copy-id \
             -o StrictHostKeyChecking=accept-new \
             -o ConnectTimeout="${SSH_TIMEOUT}" \
             -o ConnectionAttempts="${SSH_RETRY}" \
             -i ~/.ssh/id_rsa.pub \
             -p "${SSH_PORT}" \
-            "${SSH_USER}@${host}" > /dev/null 2>&1; then
+            "${SSH_USER}@${host}" 2>&1)
+        exit_code=$?
+
+        remove_known_hosts "$result" "$host"
+
+        if [ $exit_code -eq 0 ]; then
             printf "${GREEN}%-8s${NC} %s\n" "[OK]" "${host}"
             count_result 0
         else
@@ -135,6 +149,7 @@ print_summary() {
 #===============================================================================
 main() {
     check_tools
+    setup_ssh_key
     echo "=== 대상 호스트 ==="
     get_hosts_ip
     echo "=================="
