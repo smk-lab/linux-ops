@@ -47,8 +47,10 @@ remove_known_hosts(){
     local host=$2
 
     if echo "$result" | grep -q "WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!"; then
-        ssh-keygen -f "$HOME/.ssh/known_hosts" -R "$host" 2>/dev/null
+        ssh-keygen -f "$HOME/.ssh/known_hosts" -R "$host" > /dev/null 2>/dev/null
+        return 0
     fi
+    return 1
 }
 
 setup_ssh_key() {
@@ -105,9 +107,19 @@ exchange_keys() {
             -p "${SSH_PORT}" \
             "${SSH_USER}@${host}" 2>&1)
         local exit_code=$?
-        set -e
-
-        remove_known_hosts "$result" "$host"
+    
+    remove_known_hosts "$result" "$host"
+    if [ $? -eq 0 ]; then
+            result=$(sshpass -p "${pw}" ssh-copy-id \
+                -o StrictHostKeyChecking=accept-new \
+                -o ConnectTimeout="${SSH_TIMEOUT}" \
+                -o ConnectionAttempts="${SSH_RETRY}" \
+                -i ~/.ssh/id_rsa.pub \
+                -p "${SSH_PORT}" \
+                "${SSH_USER}@${host}" 2>&1)
+        exit_code=$?
+    fi
+    set -e
 
         if [ $exit_code -eq 0 ]; then
             printf "${GREEN}%-8s${NC} %s\n" "[OK]" "${host}"
