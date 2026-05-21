@@ -31,6 +31,21 @@ KNOWN_GROUPS=(DPL CTL COM AP DB PMT IBR EBR STR)
 INCLUDE_UNKNOWN=false
 
 #===============================================================================
+# [MAIN]
+#===============================================================================
+main(){
+    check_tools
+    input_name
+    check_session
+    check_hosts_file
+    parse_hosts
+        
+    for group in "${SECTION_ORDER[@]}"; do
+        build_session "$group"
+    done
+}
+
+#===============================================================================
 # [FUNCTIONS]
 #===============================================================================
 check_tools(){
@@ -147,22 +162,6 @@ build_session() {
     done
 }
 
-
-
-#===============================================================================
-# [MAIN]
-#===============================================================================
-main(){
-    check_tools
-    input_name
-    check_session
-    check_hosts_file
-    parse_hosts
-        
-    for group in "${SECTION_ORDER[@]}"; do
-        build_session "$group"
-    done
-}
 
 #===============================================================================
 # [ENTRY POINT]

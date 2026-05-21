@@ -52,6 +52,21 @@ custom(){
 }
 
 #===============================================================================
+# [MAIN]
+#===============================================================================
+main(){
+    check_tools
+    input_name
+    check_session_custom
+    check_hosts_file
+    parse_hosts
+        
+    for group in "${SECTION_ORDER[@]}"; do
+        build_session "$group"
+    done
+}
+
+#===============================================================================
 # [FUNCTIONS]
 #===============================================================================
 check_tools(){
@@ -166,21 +181,6 @@ build_session() {
                 tmux send-keys -t "$SESSION:$win_name.$pane" "source /etc/kolla/admin-openrc.sh" Enter
             fi
         done
-    done
-}
-
-#===============================================================================
-# [MAIN]
-#===============================================================================
-main(){
-    check_tools
-    input_name
-    check_session_custom
-    check_hosts_file
-    parse_hosts
-        
-    for group in "${SECTION_ORDER[@]}"; do
-        build_session "$group"
     done
 }
 
